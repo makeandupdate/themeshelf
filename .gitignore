@@ -1,0 +1,3 @@
+.shots/
+# local tool state
+.claude/settings.local.json

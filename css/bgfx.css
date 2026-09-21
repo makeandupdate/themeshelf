@@ -1,0 +1,311 @@
+/* ThemeShelf — the hero's moving background.
+ *
+ * Every slide gets a `.bgfx` layer between the picture and the scrim: sixteen
+ * <i>s, each carrying an index (--k) and three seeded numbers 0-100 (--x, --y,
+ * --s) so one DOM serves every effect and no two themes scatter alike. A KIND
+ * decides what the sixteen are — bars, orbs, stars, rain — and app.js picks the
+ * kind per style. It sits UNDER the scrim, so the copy's contrast is whatever
+ * it was before anything moved.
+ *
+ * Only transform and opacity are animated (the one exception is none: even the
+ * grid scrolls by translating a child). The layer pauses when the hero is
+ * scrolled away or the tab is hidden (.is-idle, set by app.js), and under
+ * prefers-reduced-motion nothing moves and the kinds that only make sense in
+ * motion are not drawn at all.
+ *
+ * With a real hero image the same layer plays over it, and the image itself
+ * drifts in a slow push-in — so "animated background" holds either way.
+ */
+.bgfx { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.bgfx i { position: absolute; display: block; will-change: transform, opacity; --c: var(--c-neon); }
+.bgfx i:nth-child(3n + 2) { --c: var(--c-cyan); }
+.bgfx i:nth-child(3n) { --c: var(--c-amber); }
+.hero__stage.is-idle :is(.bgfx, .bgfx i, .bgfx i::before, .slide__img > .art--img, .show *) { animation-play-state: paused !important; }
+
+/* the static bars belong to thumbnails and the reflection; in the hero they move */
+.slide__img > .art::after { display: none; }
+.slide__img > .art--img { animation: push-in 38s ease-in-out infinite alternate; }
+.slide__img:has(> .art--img) .bgfx { opacity: 0.7; mix-blend-mode: screen; }
+@keyframes push-in { from { transform: scale(1.02); } to { transform: scale(1.12) translate(-1.5%, -1%); } }
+
+/* ---- eq: the DJ panel's equaliser ---- */
+.bgfx--eq i { left: calc(38% + var(--k) * 3.8%); bottom: 0; width: 2.3%; height: calc(20% + var(--s) * 0.5%); background: linear-gradient(rgb(var(--c) / 0.4), rgb(var(--c) / 0.8)); transform-origin: 50% 100%; animation: eq calc(0.85s + var(--s) * 0.012s) ease-in-out infinite alternate; animation-delay: calc(var(--x) * -0.03s); }
+@keyframes eq { from { transform: scaleY(0.28); } to { transform: scaleY(1); } }
+
+/* ---- orbs: slow coloured light, for glass and for anything that glows ---- */
+.bgfx--orbs i { left: calc(var(--x) * 1% - 12%); top: calc(var(--y) * 1% - 22%); width: calc(18vmax + var(--s) * 0.14vmax); aspect-ratio: 1; border-radius: 50%; background: rgb(var(--c) / 0.34); filter: blur(42px); animation: orb calc(16s + var(--k) * 1.7s) ease-in-out infinite alternate; animation-delay: calc(var(--s) * -0.2s); }
+.bgfx--orbs i:nth-child(n + 7) { display: none; }
+@keyframes orb { from { transform: translate(-7%, -5%) scale(0.88); } to { transform: translate(9%, 8%) scale(1.16); } }
+
+/* ---- bubbles / steam: things that rise ---- */
+.bgfx--bubbles i, .bgfx--steam i { left: calc(var(--x) * 1%); bottom: -16%; width: calc(14px + var(--s) * 0.5px); aspect-ratio: 1; border-radius: 50%; animation: rise calc(8s + var(--s) * 0.09s) linear infinite; animation-delay: calc(var(--y) * -0.17s); }
+.bgfx--bubbles i { border: 1px solid rgb(255 255 255 / 0.7); background: radial-gradient(circle at 30% 28%, rgb(255 255 255 / 0.85), rgb(var(--c) / 0.22) 60%); }
+.bgfx--steam i { width: calc(70px + var(--s) * 1.4px); background: rgb(var(--c-ink) / 0.13); filter: blur(16px); animation-duration: calc(11s + var(--s) * 0.1s); }
+@keyframes rise { 10% { opacity: 1; } to { transform: translate(calc((var(--x) - 50) * 0.7px), -128vh); opacity: 0; } }
+
+/* ---- grid: a floor running at you, stars over it ---- */
+.slide__img:has(> .bgfx--grid)::after { display: none !important; }
+.bgfx--grid i { left: calc(var(--x) * 1%); top: calc(var(--y) * 0.42%); width: 2px; height: 2px; border-radius: 50%; background: #fff; animation: twinkle calc(1.4s + var(--s) * 0.03s) ease-in-out infinite alternate; }
+.bgfx--grid i:first-child { left: -40%; right: -40%; top: auto; bottom: calc(var(--dock-h) - 34px); width: auto; height: 62%; border-radius: 0; background: none; overflow: hidden; transform: perspective(340px) rotateX(62deg); transform-origin: 50% 100%; animation: none; -webkit-mask-image: linear-gradient(to top, #000 30%, transparent); mask-image: linear-gradient(to top, #000 30%, transparent); }
+.bgfx--grid i:first-child::before { content: ''; position: absolute; inset: -44px 0 0; background: linear-gradient(rgb(var(--c-neon) / 0.75) 2px, transparent 2px) 0 0 / 100% 44px, linear-gradient(90deg, rgb(var(--c-cyan) / 0.6) 2px, transparent 2px) 0 0 / 64px 100%; animation: grid-run 1.2s linear infinite; }
+@keyframes grid-run { to { transform: translateY(44px); } }
+
+/* ---- rain ---- */
+.bgfx--rain i { left: calc(var(--x) * 1.15% - 4%); top: -28%; width: 1.5px; height: calc(60px + var(--s) * 0.8px); background: linear-gradient(transparent, rgb(var(--c-ink) / 0.5)); transform: rotate(12deg); animation: rain-fall calc(0.55s + var(--s) * 0.006s) linear infinite; animation-delay: calc(var(--y) * -0.011s); }
+@keyframes rain-fall { to { transform: translate(-27vh, 128vh) rotate(12deg); } }
+
+/* ---- scan: a CRT refreshing ---- */
+.bgfx--scan i { display: none; }
+.bgfx--scan i:nth-child(1) { display: block; left: 0; right: 0; top: -20%; height: 18%; background: linear-gradient(transparent, rgb(var(--c-neon) / 0.12) 78%, rgb(var(--c-neon) / 0.36)); animation: sweep 5.5s linear infinite; }
+.bgfx--scan i:nth-child(2) { display: block; inset: 0; background: rgb(var(--c-neon) / 0.06); animation: crt-flick 4.2s steps(1) infinite; }
+@keyframes sweep { to { transform: translateY(700%); } }
+@keyframes crt-flick { 0%, 100% { opacity: 0; } 4% { opacity: 1; } 6% { opacity: 0.2; } 8% { opacity: 0.9; } 10% { opacity: 0; } 52% { opacity: 0.6; } 54% { opacity: 0; } }
+
+/* ---- stars: each element is four, twinkling; the sky itself drifts ---- */
+.bgfx--stars { animation: sky-pan 140s linear infinite alternate; }
+.bgfx--stars i { left: calc(var(--x) * 1%); top: calc(var(--y) * 0.8%); width: calc(2px + var(--s) * 0.03px); aspect-ratio: 1; border-radius: 50%; background: rgb(var(--c-ink)); box-shadow: 0 0 6px rgb(var(--c) / 0.9), 23vw 11vh 0 0 rgb(var(--c-ink) / 0.8), -31vw 19vh 0 0 rgb(var(--c-ink) / 0.6), 12vw -14vh 0 0 rgb(var(--c) / 0.8); animation: twinkle calc(1.6s + var(--s) * 0.03s) ease-in-out infinite alternate; animation-delay: calc(var(--x) * -0.05s); }
+@keyframes twinkle { from { opacity: 0.15; transform: scale(0.6); } to { opacity: 1; transform: scale(1.4); } }
+@keyframes sky-pan { to { transform: translateX(-3%); } }
+
+/* ---- shapes: geometry, afloat ---- */
+.bgfx--shapes i { left: calc(var(--x) * 1% - 4%); top: calc(var(--y) * 0.9%); width: calc(30px + var(--s) * 1.1px); aspect-ratio: 1; background: rgb(var(--c) / 0.5); animation: afloat calc(9s + var(--k) * 0.8s) ease-in-out infinite alternate; animation-delay: calc(var(--s) * -0.1s); }
+.bgfx--shapes i:nth-child(3n + 1) { border-radius: 50%; }
+.bgfx--shapes i:nth-child(3n) { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.bgfx--shapes i:nth-child(4n) { background: none; border: 4px solid rgb(var(--c) / 0.65); clip-path: none; }
+.bgfx--shapes i:nth-child(n + 11) { display: none; }
+@keyframes afloat { from { transform: translate(0, 0) rotate(0deg); } to { transform: translate(3vw, -5vh) rotate(50deg); } }
+
+/* ---- dust: motes in a shaft of light, for anything made of paper ---- */
+.bgfx--dust i { left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); width: calc(3px + var(--s) * 0.04px); aspect-ratio: 1; border-radius: 50%; background: rgb(var(--c-ink) / 0.35); animation: mote calc(12s + var(--s) * 0.12s) ease-in-out infinite alternate; animation-delay: calc(var(--x) * -0.2s); }
+.bgfx--dust i:first-child { left: -60%; top: -20%; width: 50%; height: 140%; aspect-ratio: auto; border-radius: 0; background: linear-gradient(100deg, transparent, rgb(var(--c-surface) / 0.5), transparent); animation: sheen 11s ease-in-out infinite; }
+@keyframes mote { from { transform: translate(0, 0); opacity: 0.1; } 50% { opacity: 0.8; } to { transform: translate(6vw, -9vh); opacity: 0.15; } }
+@keyframes sheen { 0%, 40% { transform: translateX(0) skewX(-12deg); } 100% { transform: translateX(420%) skewX(-12deg); } }
+
+/* ---- clouds ---- */
+.bgfx--clouds i { display: none; }
+.bgfx--clouds i:nth-child(-n + 6) { display: block; left: 100%; top: calc(var(--y) * 0.5%); width: calc(120px + var(--s) * 1.4px); height: calc(30px + var(--s) * 0.3px); border-radius: 99px; background: rgb(var(--c-surface) / 0.85); box-shadow: 34px -16px 0 2px rgb(var(--c-surface) / 0.85), 74px -6px 0 -4px rgb(var(--c-surface) / 0.85); animation: cloud calc(38s + var(--k) * 8s) linear infinite; animation-delay: calc(var(--x) * -0.6s); }
+.slide[data-fx~='pixelbox'] .bgfx--clouds i, .slide[data-fx~='thick'] .bgfx--clouds i { border-radius: 0; }
+@keyframes cloud { to { transform: translateX(-135vw); } }
+
+/* ---- scenes whose own backdrop covers the layer get their parts moving ---- */
+@media (min-width: 1000px) {
+  .px-cloud { animation: px-drift 14s ease-in-out infinite alternate; }
+  .px-sun { animation: bob 5s steps(4) infinite alternate; }
+  @keyframes px-drift { to { translate: 70px 0; } }
+  .ne-frame { animation: ne-pulse 3s ease-in-out infinite alternate; }
+  @keyframes ne-pulse { from { opacity: 0.72; } to { opacity: 1; } }
+  .vt-lamp { animation: crt-flick 6s steps(1) infinite reverse; }
+  .sy-stars { animation: twinkle 3.5s ease-in-out infinite alternate; }
+  .ad.rays, .at.star, .mc-clock { animation: turn 70s linear infinite; }
+  .mt.swirl.a { animation: turn 60s linear infinite; }
+  .bh.c, .ss-circle, .mi-dot, .bo-sun, .vc-sun, .sl.sun { animation: bob 7s ease-in-out infinite alternate; }
+  .xp-cloud { animation: px-drift 22s ease-in-out infinite alternate; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bgfx, .bgfx i, .bgfx i::before, .slide__img > .art--img { animation: none !important; }
+  .bgfx--rain, .bgfx--bubbles, .bgfx--steam, .bgfx--clouds, .bgfx--scan { display: none; }
+}
+
+/* ---- the logo ------------------------------------------------------------
+   The mark is the three button shapes as three bars, so it moves the way the
+   rest of the hero does: as an equaliser. Each bar has its own tempo so they
+   never lock step; hovering the brand speeds them up; and a theme change makes
+   them hop in sequence, which is the one moment the logo "reacts". The wordmark
+   carries a slow highlight in the theme's accent — painted with currentColor on
+   both sides, so whatever colour a theme gives the brand still applies. */
+.brand__mark { height: 20px; }
+.brand__mark i { transform-origin: 50% 100%; animation: logo-eq 1.6s ease-in-out infinite alternate; }
+.brand__mark i:nth-child(2) { animation-duration: 1.1s; animation-delay: -0.4s; }
+.brand__mark i:nth-child(3) { animation-duration: 1.9s; animation-delay: -0.9s; }
+.brand:hover .brand__mark i, .brand:focus-visible .brand__mark i { animation-duration: 0.42s; }
+html.is-switching .brand__mark i { animation: logo-hop 0.62s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+html.is-switching .brand__mark i:nth-child(2) { animation-delay: 0.08s; }
+html.is-switching .brand__mark i:nth-child(3) { animation-delay: 0.16s; }
+@keyframes logo-eq { from { transform: scaleY(0.5); } to { transform: scaleY(1.15); } }
+@keyframes logo-hop { 0% { transform: translateY(0) scaleY(1); } 40% { transform: translateY(-9px) scaleY(1.25); } 100% { transform: translateY(0) scaleY(1); } }
+.brand__name { background: linear-gradient(100deg, currentColor 42%, rgb(var(--c-neon)) 50%, currentColor 58%) 100% 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: logo-shine 6s ease-in-out infinite; }
+@keyframes logo-shine { 0%, 55% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .brand__mark i, .brand__name { animation: none !important; }
+  .brand__name { -webkit-text-fill-color: currentColor; background: none; }
+}
+
+/* ---- a real picture is the point: get out of its way ----------------------
+   The scrim was tuned for generated art, where there is nothing to see. Over a
+   supplied image it measured as hiding nearly all of it (0.9 of the page colour
+   across the middle of a centred layout). With an image the scrim is only as
+   strong as the type needs, and a scene drops whatever the picture already
+   shows — Steampunk's drawn gears sat on top of the image's own. */
+.slide.has-img .slide__scrim { background: linear-gradient(90deg, rgb(var(--c-bg) / 0.86) 0%, rgb(var(--c-bg) / 0.5) 36%, rgb(var(--c-bg) / 0) 70%), linear-gradient(180deg, rgb(var(--c-bg) / 0.5) 0, rgb(var(--c-bg) / 0) 110px); }
+.slide.has-img.lay-center .slide__scrim { background: radial-gradient(60% 70% at 50% 44%, rgb(var(--c-bg) / 0.6), rgb(var(--c-bg) / 0.18) 70%, rgb(var(--c-bg) / 0)), linear-gradient(180deg, rgb(var(--c-bg) / 0.5) 0, rgb(var(--c-bg) / 0) 110px); }
+/* seen on Bohemian: 0.72 of the page colour at the midpoint washed the arch out to a ghost */
+.slide.has-img.lay-poster .slide__scrim { background: linear-gradient(90deg, rgb(var(--c-bg) / 0.8) 0%, rgb(var(--c-bg) / 0.4) 42%, rgb(var(--c-bg) / 0) 66%); }
+.slide.has-img .land__copy:not(.card) :is(.slide__name, .land__tag, .slide__blurb, .slide__index) { text-shadow: 0 1px 16px rgb(var(--c-bg)), 0 0 3px rgb(var(--c-bg) / 0.8); }
+.scene--steampunk.has-img .sp-gear { display: none; }
+.scene--steampunk.has-img .sp-plate { background-color: rgb(var(--c-surface) / 0.82); background-image: radial-gradient(circle at 14px 14px, rgb(var(--c-amber)) 0 4px, rgb(0 0 0 / 0.5) 5px, transparent 6px), radial-gradient(circle at calc(100% - 14px) 14px, rgb(var(--c-amber)) 0 4px, rgb(0 0 0 / 0.5) 5px, transparent 6px), radial-gradient(circle at 14px calc(100% - 14px), rgb(var(--c-amber)) 0 4px, rgb(0 0 0 / 0.5) 5px, transparent 6px), radial-gradient(circle at calc(100% - 14px) calc(100% - 14px), rgb(var(--c-amber)) 0 4px, rgb(0 0 0 / 0.5) 5px, transparent 6px); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+
+/* ---- supplied images that already CONTAIN the scenery ----------------------
+   These backgrounds were painted from the scene, so they carry their own sun,
+   arch, polaroids, neon arcs. Drawing the CSS version on top doubles everything
+   (measured by eye: two arches offset from each other; on Heavy Neon the brick
+   wall covered the image outright). With an image present, only the drawn
+   BACKDROP pieces the picture already shows are dropped. Nothing of the UI —
+   copy, buttons, nav, panel, the boarding pass, the browser mock — is touched,
+   and removing the image brings every one of these back. */
+.scene--neon.has-img .ne-wall { display: none; }
+.scene--vacation.has-img :is(.vc-sun, .vc-sea) { display: none; }
+.scene--boho.has-img .show > * { display: none; }
+.scene--punk.has-img .show > * { display: none; }
+
+/* second batch of supplied images — same rule: only drawn BACKDROP the picture
+   already contains is dropped; every card, button and readout stays. */
+.scene--cybercore.has-img :is(.cc-ring, .cc-cross) { display: none; }
+.scene--brutal.has-img :is(.bt-blk, .bt-star) { display: none; }
+.scene--scrapbook.has-img:not(.scene--polaroid, .scene--zine) .show > * { display: none; }   /* Polaroid and Zine borrow this scene (as: 'scrapbook') but not its picture: theirs are blank stock, so their prints stay */
+.scene--surreal.has-img .show > * { display: none; }
+.scene--y2kchrome.has-img :is(.yk-globe, .yk-star) { display: none; }
+.scene--pixel.has-img :is(.px-sun, .px-cloud, .px-hill, .px-ground, .px-tree, .sx-sky) { display: none; }
+.scene--pixel.has-img .bgfx { display: none; }
+.scene--synthwave.has-img :is(.sy-mtn, .sy-stars), .scene--synthwave.has-img .land::before, .scene--synthwave.has-img .bgfx--grid i:first-child { display: none; }
+.scene--glassmorphism.has-img .gl-pane { display: none; }
+/* A gradient-filled title has a transparent fill, so a text-shadow paints THROUGH the
+   letters: over an image the page-coloured halo replaced the type (Synthwave went
+   black, Y2K went white). Those titles keep their own drop-shadow filter instead. */
+.slide.has-img:is([data-fx~='chrometext'], [data-fx~='sunset']) .land__copy .slide__name { text-shadow: none; }
+
+/* third batch of supplied images — drawn backdrop the picture already contains */
+.scene--minimal.has-img .slide__img > .art { opacity: 1; } /* the 0.25 was there to mute GENERATED art */
+.scene--minimal.has-img .show > * { display: none; }
+.scene--editorial.has-img:not(.scene--newspaper) :is(.ed-fig, .ed-q, .ed-col) { display: none; }
+.scene--swiss.has-img :is(.ss-circle, .ss-bar, .ss-cols), .scene--swiss.has-img .bgfx { display: none; }
+.scene--maximal.has-img :is(.mx-band, .mx-flower, .mx-echo, .mx-pol), .scene--maximal.has-img .bgfx { display: none; }
+.scene--luxury.has-img .lx-frame { display: none; }
+.scene--sketch.has-img:not(.scene--graphpaper) .show > * { display: none; }   /* Graph Paper borrows the scene; its picture is an empty grid, so the plot stays */
+.scene--ethereal.has-img :is(.et-veil, .et-ring, .et-sp) { display: none; }
+/* seen: the one-line title ended exactly where the supplied photograph begins */
+.scene--editorial.has-img:not(.scene--newspaper) .slide__name { max-width: 8.5ch; }
+/* …and the second title line pushed the tag row under the control panel; the masthead's
+   dateline also ran across the photograph. */
+.scene--editorial.has-img:not(.scene--newspaper) .slide__tags, .scene--editorial.has-img:not(.scene--newspaper) .ed-mast span { display: none; }
+@media (min-width: 1000px) { .scene--editorial.has-img:not(.scene--newspaper) .ed-mast { max-width: 50%; } }
+
+/* fourth batch */
+.scene--victorian.has-img .show > * { display: none; }      /* wallpaper, cameos and lamps: the picture has its own ornament */
+.scene--cybercore.has-img .cc-read { display: none; }        /* the new Cybercore image has the readouts painted in */
+.slide.has-img .bgfx--eq { display: none; }                  /* these pictures already contain the bars; animated ones on top doubled them */
+
+/* fifth batch */
+.scene--glass.has-img .gl-pane { display: none; }        /* the picture has its own panes, as on Glassmorphism */
+.scene--cyberpunk.has-img .cp-city { display: none; }     /* …and its own skyline; the battery panel, tape and ID stay */
+/* a title that sits on its own slab of colour needs no halo against the picture — and
+   the page-coloured one read as a dark smudge on Cyberpunk's yellow */
+.slide.has-img:is(.scene--brutal, .scene--scrapbook, .scene--cyberpunk, .scene--zine, .scene--punk, .scene--polaroid) .land__copy .slide__name { text-shadow: none; }
+
+/* sixth batch */
+.scene--ai.has-img .ai-glow { display: none; }            /* the picture is the glow */
+.scene--poker.has-img .pk-rail { display: none; }          /* …and the table's rail; the hand and the chips stay on it */
+.slide.has-img .bgfx--clouds { display: none; }            /* pictures with a sky bring their own clouds */
+
+/* seventh batch — the geometric and ornamental shelf. These scenes were mostly drawn
+   scenery, so more of it goes; anything that reads as an object (the bowl, the arch
+   plate, the sideboard, the figure, the table) stays. */
+.scene--bauhaus.has-img .show > *,
+.scene--artdeco.has-img .show > * { display: none; }        /* the composition / the fans and frame are the picture */
+.scene--artnouveau.has-img :is(.an-vine, .an-flower) { display: none; }   /* whiplash vines are painted in; the arch plate stays */
+.scene--constructivist.has-img .cv:not(.c) { display: none; }             /* wedge and bars are painted in; the numbered disc and slogan stay */
+.scene--midcentury.has-img :is(.mc.boom, .mc-clock) { display: none; }    /* the picture has its own boomerangs and starburst */
+.scene--corpmemphis.has-img .cm.blob { display: none; }                   /* …and its own blobs */
+/* These three pictures keep everything at the right edge, and a centre crop cuts the circle, the buds and the blue bar
+   off. Right-align them — but only on a wide, landscape stage. Ungated, the same rule dragged the composition under
+   the copy on a phone (measured at 375px: Bauhaus title 1.01:1 over the red circle, Art Nouveau blurb 1.02:1). */
+@media (min-width: 1200px) and (min-aspect-ratio: 3/2) {
+  :is(.scene--brutalism, .scene--bauhaus, .scene--artnouveau, .scene--solarpunk, .scene--midcentury, .scene--constructivist, .scene--wabisabi, .scene--liquidglass, .scene--retrofuture).has-img .art--img { background-position: right center; }   /* the last four joined once their drawn scenes came off: the picture's subject is at its right edge and now has that side to itself */
+}
+
+/* eighth batch — the operating systems. Windows, icons, dialogs, taskbars and terminals all stay. */
+.scene--winxp.has-img :is(.xp-hill, .xp-cloud) { display: none; }   /* the picture is the hill */
+.scene--vista.has-img .vs-aur { display: none; }                    /* …and the aurora */
+.slide.has-img.scene--geocities .land__copy .slide__name { text-shadow: none; }   /* rainbow-clipped title: the shadow painted through it, as with chrome and sunset */
+
+/* ninth batch — consoles and the two punks. 8-bit, 16-bit and Pixel UI inherit the Pixel rule above (as: 'pixel'):
+   drawn scenery goes, the dialog, HUD, inventory and bars stay. */
+.scene--solarpunk.has-img :is(.sl.sun, .sl.turb, .sl.leaf) { display: none; }   /* the picture has the sun, the turbines and the foliage; the greenhouse and its panels stay */
+.scene--biopunk.has-img :is(.bp-dish, .bp-cell) { display: none; }              /* …and the cultures; the helix and the readout stay */
+
+/* ---- phones: two pictures put their brightest part straight behind the copy ----
+   Measured at 375px over all 59 image heroes, scrim included, 5th-percentile pixel under each text run:
+   Synthwave's centred copy sits on the brightest band of sky (2.2:1 raw; tagline 4.0:1 and blurb 3.95:1 through the scrim) and Biopunk's centre
+   crop lands the big culture under the ends of the blurb's lines (1.08:1 worst, 7% of samples under 4.5).
+   Everything else clears. Synthwave gets a denser scrim behind the copy only (Outrun and Vaporwave inherit
+   it, and their pictures have the same centred sun); Biopunk slides to the dark side of its picture. */
+@media (max-width: 720px) {
+  .slide.scene--synthwave.has-img.lay-center .slide__scrim { background: radial-gradient(95% 62% at 50% 46%, rgb(var(--c-bg) / 0.72), rgb(var(--c-bg) / 0.62) 60%, rgb(var(--c-bg) / 0)), linear-gradient(180deg, rgb(var(--c-bg) / 0.5) 0, rgb(var(--c-bg) / 0) 110px); }
+  .scene--biopunk.has-img .art--img { background-position: 25% center; }
+  /* The default scrim fades to nothing by 70% across, which suits a desktop copy column; on a phone the lines run the
+     full width and their ends sit on bare picture. Measured blurbs: Frutiger Aero 3.63:1 over the clouds, Blueprint
+     4.36:1, Graph Paper 4.37:1. These three keep some scrim all the way across. */
+  .scene--aero.has-img .art--img { background-position: 22% center; }   /* and Aero also slides off its white clouds onto open sky: the scrim alone only reached 4.33:1 */
+  .slide.has-img:is(.scene--aero, .scene--blueprint, .scene--graphpaper) .slide__scrim { background: linear-gradient(90deg, rgb(var(--c-bg) / 0.86), rgb(var(--c-bg) / 0.62)); }
+}
+
+/* tenth batch — space and print. Newspaper borrows Editorial's scene (as: 'editorial') and with it Editorial's
+   image rules, which drop the figure, the pull quote and the column because Editorial's picture IS a photograph.
+   Newspaper's picture is blank newsprint, so those rules now skip it (:not(.scene--newspaper) above) and the
+   front page stays. */
+.scene--spaceage.has-img .show > *,
+.scene--atomic.has-img .show > * { display: none; }   /* all scenery, all of it painted in: spheres and orbits / atom, starbursts, boomerangs */
+.scene--retrofuture.has-img :is(.rf.planet, .rf.ring, .rf-rocket, .rf-city, .rf.star) { display: none; }   /* ringed planet, rocket, skyline and stars are in the picture */
+
+/* eleventh batch — the sixteen recovered from the session transcript (they were sent mid-turn and never reached
+   disk). Ten of them need nothing: the deed card, the browser window, the library card, the floor plan, the plot,
+   the exploded diagram, the journal page, the envelope, the case file and the prints are objects, and their
+   pictures are empty stock behind them. */
+.scene--clay.has-img :is(.cl-blob, .cl-ring) { display: none; }              /* spheres and the torus are painted in; the phone stays */
+.scene--memphis.has-img :is(.mp, .mp-sq) { display: none; }                  /* every shape and squiggle is in the picture; the 1981 card stays */
+.scene--vaporwave.has-img .vw-palm { display: none; }                        /* palms (sun, mountains and grid go with Synthwave's rule); the dialog and the bust stay */
+.scene--outrun.has-img .or-road { display: none; }                           /* the picture is the road; the car stays on it */
+.scene--aero.has-img :is(.ae-hill, .ae-flare, .ae-bub) { display: none; }    /* hill, flare and bubbles; the player window stays */
+.scene--metro.has-img .show > * { display: none; }                           /* swirls, skyline, arrows and dots — all scenery, all painted in */
+
+/* Outrun's replacement picture has a larger, brighter sun, and on a desktop stage the centred tagline and blurb
+   sit right on it (measured through the stock scrim: tagline 2.81:1, blurb 3.19:1). A small halo of page colour
+   behind those two lines only — the sun keeps its rim and its lower half. Phones already pass (17:1): the copy
+   sits above the sun there, under Synthwave's phone scrim. */
+/* desktop: a tight halo behind the two lines, and a lighter wash than the stock 0.6 so the sun keeps its colour
+   (tagline 9.3–13.2:1, blurb 10.3–13.0:1 at 1024, 1280 and 1920) */
+@media (min-width: 1000px) {
+  .slide.scene--outrun.has-img.lay-center .slide__scrim { background: radial-gradient(22% 9% at 50% 38.5%, rgb(var(--c-bg) / 0.7), rgb(var(--c-bg) / 0.6) 55%, rgb(var(--c-bg) / 0)), radial-gradient(60% 70% at 50% 44%, rgb(var(--c-bg) / 0.3), rgb(var(--c-bg) / 0.12) 70%, rgb(var(--c-bg) / 0)), linear-gradient(180deg, rgb(var(--c-bg) / 0.5) 0, rgb(var(--c-bg) / 0) 110px); }
+}
+/* tablet: the copy sits elsewhere on the stage, so the light wash fell to 3.8:1 there; stock wash plus a broader halo (8.0 / 7.4:1 at 768) */
+@media (min-width: 721px) and (max-width: 999px) {
+  .slide.scene--outrun.has-img.lay-center .slide__scrim { background: radial-gradient(24% 13% at 50% 38.5%, rgb(var(--c-bg) / 0.62), rgb(var(--c-bg) / 0.55) 60%, rgb(var(--c-bg) / 0)), radial-gradient(60% 70% at 50% 44%, rgb(var(--c-bg) / 0.6), rgb(var(--c-bg) / 0.18) 70%, rgb(var(--c-bg) / 0)), linear-gradient(180deg, rgb(var(--c-bg) / 0.5) 0, rgb(var(--c-bg) / 0) 110px); }
+}
+
+/* ---- with a picture, the picture is the illustration ------------------------------------------------
+   The first passes only dropped drawn scenery the picture already contained and kept every drawn OBJECT.
+   Reviewed across all 83 image heroes, that was the wrong line for a group of them: the supplied pictures are
+   finished compositions with their subject on the right, and a CSS figure, a sideboard, a chart in an arch or a
+   stray stat card set on top of one reads as clutter, not as design (Corporate Memphis's long-armed figure over
+   the painted blobs was the clearest case). So where the drawn pieces were props, mascots or generic cards,
+   they now go entirely and the right-hand side belongs to the picture.
+   What stays is interface that IS the theme: the OS windows and terminals, the consoles and devices, the
+   documents (deed, library card, envelope, case file, journal figure, prints, plans, diagrams), Discord, the
+   boarding pass, Bento's tiles, Clay's phone, Neon's signs, Steampunk's gauges, Poker's hand and chips.
+   All of it is keyed to .has-img, so a theme without a picture still gets its full drawn scene. */
+:is(.scene--corpmemphis, .scene--midcentury, .scene--memphis, .scene--constructivist, .scene--solarpunk, .scene--biopunk,
+    .scene--retrofuture, .scene--artnouveau, .scene--wabisabi, .scene--swiss, .scene--synthwave).has-img .show > * { display: none; }
+.scene--noir.has-img :is(.nr-sign, .nr-lamp) { display: none; }   /* flat signs on a cinematic skyline; the falling rain stays, it is the animation */
+.scene--deed.has-img .dd-props { display: none; }                  /* loose houses with no board under them; the deed and the dice stay */
+
+.scene--typewriter.has-img :is(.tw-roll, .tw-ribbon, .tw-keys, .tw-margin) { display: none; }   /* a platen bar under the nav and ten loose keys over the dock: props, not interface. The typed sheet (the copy) stays */
+
+/* Cyberdeck's four corner read-outs were 190px boxes of LEDs and a three-line terminal pinned into the corners of a
+   picture that already draws its own circuitry there: too small to read as interface, and the top pair crowded the
+   nav. With a picture they go. */
+.scene--cyberdeck.has-img .show > * { display: none; }
+/* Noir had two rains. .nr-rain was a static sheet of evenly spaced 1px diagonals laid over the whole hero — copy
+   included — and its 0.5s loop did not tile, so it visibly jumped. The animated background (.bgfx--rain: separate
+   streaks that actually fall) is the one that works, so the sheet goes in every mode, picture or not. */
+.nr-rain { display: none !important; }
+.scene--cyberdeck.has-img .bgfx--scan i:nth-child(1) { display: none; }   /* the picture has its own amber horizon; a second bright band sweeping through the title fought it. The faint flicker stays */
